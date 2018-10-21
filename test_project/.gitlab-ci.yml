@@ -1,0 +1,50 @@
+---
+
+image: docker:latest
+
+variables:
+  # When using dind, it's wise to use the overlayfs driver for
+  # improved performance:
+  DOCKER_DRIVER: overlay2
+  PROJECT_NAME: "test_project"
+  GROUP_NAME: "wemake.services"
+  REGISTRY: "registry.gitlab.com"
+  PIPENV_SHELL_COMPAT: "true"
+  CONTAINER_RELEASE_IMAGE: "$REGISTRY/$GROUP_NAME/$PROJECT_NAME:latest"
+
+services:
+  - docker:dind
+
+before_script:
+  # Installing docker-compose:
+  - apk update && apk upgrade
+  - apk add python python-dev py-pip git build-base
+  - pip install dump-env docker-compose
+  # Creating `.env` configuration file:
+  - dump-env -t config/.env.template -p 'SECRET_' > config/.env
+  # Login into Docker registry:
+  - docker login -u gitlab-ci-token -p "$CI_JOB_TOKEN" "$REGISTRY"
+  # Debug information:
+  - docker info && docker-compose --version && git --version
+
+# Testing application:
+test:
+  stage: test
+  script:
+    - docker-compose -f docker-compose.yml -f docker/docker-compose.prod.yml config --quiet
+    - docker-compose run -e INSIDE_CI=1 web sh ./docker/ci.sh
+  coverage: '/[\d\.]+\%\s*$/'
+  artifacts:
+    paths:
+      - artifacts/
+
+# Releasing image, when tests pass:
+release-image:
+  stage: deploy
+  script:
+    - docker build -t "$CONTAINER_RELEASE_IMAGE" --build-arg DJANGO_ENV=production -f docker/django/Dockerfile .
+    - docker push "$CONTAINER_RELEASE_IMAGE"
+  only:
+    - master
+  environment:
+    name: production  # used to track time with 'cycle analytics'
