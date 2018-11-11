@@ -6,14 +6,14 @@ from typing import Callable, ClassVar, Generic, Type, TypeVar, Optional
 
 import pavlova
 import dataclasses
-from django.http import JsonResponse, HttpResponse
+from django.http import JsonResponse, HttpResponse, HttpRequest
 from typing_extensions import Protocol, final
 
-KT = TypeVar('KT')
-VT = TypeVar('VT')
+KT = TypeVar('KT')  # TODO: move to types
+VT = TypeVar('VT')  # TODO: rename to RequestPayload, ResponsePayload
 
 
-class _BodylessController(Protocol[VT]):
+class _BodylessController(Protocol[VT]):  # TODO: move to types
     def __init__(self, request, *args, **kwargs) -> None:
         ...
 
@@ -21,7 +21,7 @@ class _BodylessController(Protocol[VT]):
         ...
 
 
-class _PayloadController(Protocol[KT, VT]):
+class _PayloadController(Protocol[KT, VT]):  # TODO: move to types
     def __init__(self, request, *args, **kwargs) -> None:
         ...
 
@@ -33,7 +33,7 @@ class _Method(Generic[KT, VT]):
     response_payload: ClassVar[Type[VT]]
 
     @final
-    def __init__(self, request, *args, **kwargs) -> None:
+    def __init__(self, request: HttpRequest, *args, **kwargs) -> None:
         self.request = request
         self.args = args
         self.kwargs = kwargs

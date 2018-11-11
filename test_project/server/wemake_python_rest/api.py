@@ -32,7 +32,7 @@ class _APIView(View):
 
 class Declaration(object):
     def __init__(self) -> None:
-        self._endpoints = {}
+        self.endpoints = {}
 
     def add_endpoint(
         self,
@@ -40,14 +40,14 @@ class Declaration(object):
         endpoint: Endpoint,
         name: str,
     ) -> None:
-        if url in self._endpoints:
+        if url in self.endpoints:
             raise ImproperlyConfigured('Non-unique URL: ' + url)
-        self._endpoints[url] = (endpoint, name)
+        self.endpoints[url] = (endpoint, name)
 
     def urls(self):  # TODO: type List[URLPattern]
         urls_to_include = []
 
-        for url_prefix, endpoint_declaration in self._endpoints.items():
+        for url_prefix, endpoint_declaration in self.endpoints.items():
             endpoint, name = endpoint_declaration
             urls_to_include.append(
                 # TODO: add option to auto-generate name
