@@ -32,7 +32,6 @@ class Endpoint(object):
     def as_view(self):
         def factory(request, *args, **kwargs):
             self.head = getattr(self, 'head', self.get)
-            # TODO: do we really need these assignments?
             self.request = request
             self.args = args
             self.kwargs = kwargs

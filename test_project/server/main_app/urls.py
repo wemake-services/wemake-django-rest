@@ -7,7 +7,7 @@ from server.wemake_python_rest.api import Declaration
 from server.main_app.views import UserEndpoint
 
 api = Declaration()
-api.add_endpoint(r'user/', UserEndpoint)
+api.add_endpoint(r'user/', UserEndpoint, name='user')
 
 
 urlpatterns = [

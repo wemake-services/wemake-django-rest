@@ -2,22 +2,23 @@
 
 from typing import ClassVar
 
+from django.conf import ImproperlyConfigured
 from django.urls import path
 from django.utils.decorators import classonlymethod
 from django.views import View
+from django.views.decorators.csrf import csrf_exempt
 
-from server.wemake_python_rest.endpoint import Endpoint
+from server.wemake_python_rest.method import Endpoint
 
 
 class _APIView(View):
     endpoint: ClassVar[Endpoint]
 
     @classonlymethod
-    def as_view(cls, **kwargs):
-        endpoint = kwargs.pop('endpoint')
+    def as_view(cls, endpoint: Endpoint = None, **kwargs):
         view = super().as_view(**kwargs)
         cls.endpoint = endpoint
-        return view
+        return csrf_exempt(view)
 
     def dispatch(self, request, *args, **kwargs):
         method_name = request.method.lower()
@@ -25,8 +26,8 @@ class _APIView(View):
         if method_class is None:
             return self.http_method_not_allowed
 
-        actual_method = method_class()
-        return actual_method.dispatch(request, *args, **kwargs)
+        actual_method = method_class(request, *args, **kwargs)
+        return actual_method.dispatch()
 
 
 class Declaration(object):
@@ -36,10 +37,11 @@ class Declaration(object):
     def add_endpoint(
         self,
         url: str,
-        endpoint,  # TODO: type
-        name: str = None,
+        endpoint: Endpoint,
+        name: str,
     ) -> None:
-        # TODO: ensure unique url
+        if url in self._endpoints:
+            raise ImproperlyConfigured('Non-unique URL: ' + url)
         self._endpoints[url] = (endpoint, name)
 
     def urls(self):  # TODO: type List[URLPattern]
@@ -52,5 +54,4 @@ class Declaration(object):
                 path(url_prefix, _APIView.as_view(endpoint=endpoint), name=name),
             )
 
-        print(urls_to_include)
         return urls_to_include
